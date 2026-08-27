@@ -33,6 +33,7 @@ from logging.handlers import RotatingFileHandler
 
 LOGGER = logging.getLogger(__name__)
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(name)s - %(message)s",
@@ -50,9 +51,9 @@ logging.basicConfig(
 
 # Auth Users
 AUTH_USERS = [
-    int(chat)
+    int(chat.strip())
     for chat in Config.AUTH_USERS.split(",")
-    if chat != ""
+    if chat.strip()
 ]
 
 
@@ -64,38 +65,39 @@ prefixes = ["/", "~", "?", "!"]
 plugins = dict(root="plugins")
 
 
-if __name__ == "__main__":
+# Temporary debug
 print("API_ID:", Config.API_ID)
 print("API_HASH length:", len(Config.API_HASH))
 print("BOT_TOKEN present:", bool(Config.BOT_TOKEN))
 
-    bot = Client(
-        name="StarkBot",
-        bot_token=Config.BOT_TOKEN,
-        api_id=Config.API_ID,
-        api_hash=Config.API_HASH,
-        sleep_threshold=20,
-        plugins=plugins,
-        workers=50,
 
-        # पुरानी .session file use नहीं होगी
-        in_memory=True
+bot = Client(
+    name="StarkBot",
+    bot_token=Config.BOT_TOKEN,
+    api_id=Config.API_ID,
+    api_hash=Config.API_HASH,
+    sleep_threshold=20,
+    plugins=plugins,
+    workers=50,
+    in_memory=True
+)
+
+
+async def main():
+    await bot.start()
+
+    bot_info = await bot.get_me()
+
+    LOGGER.info(
+        f"<--- @{bot_info.username} Started (c) STARKBOT --->"
     )
 
-    async def main():
-        await bot.start()
+    await idle()
 
-        bot_info = await bot.get_me()
-
-        LOGGER.info(
-            f"<--- @{bot_info.username} Started (c) STARKBOT --->"
-        )
-
-        await idle()
-
-        await bot.stop()
+    await bot.stop()
 
 
-    asyncio.get_event_loop().run_until_complete(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 
     LOGGER.info("<--- Bot Stopped --->")
