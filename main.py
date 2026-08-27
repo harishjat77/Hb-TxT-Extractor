@@ -22,9 +22,11 @@
 
 
 import asyncio
+import json
 import logging
 import sys
 
+import aiohttp
 import tgcrypto
 from config import Config
 from pyrogram import Client, idle
@@ -71,6 +73,28 @@ AUTH_USERS = [
 prefixes = ["/", "~", "?", "!"]
 
 
+START_MESSAGE = (
+    "Hi, I am All in One Extractor Bot.\n\n"
+    "/pw - Physics Wallah\n"
+    "/e1 - E1 Coaching App\n"
+    "/vidya - Vidya Bihar App\n"
+    "/ocean - Ocean Gurukul App\n"
+    "/winners - The Winners Institute\n"
+    "/rgvikramjeet - Rgvikramjeet App\n"
+    "/txt - Ankit With Rojgar, The Mission Institute, The Last Exam App\n"
+    "/cp - Classplus App\n"
+    "/cw - Careerwill App\n"
+    "/khan - Khan GS App\n"
+    "/exampur - Exampur App\n"
+    "/samyak - Samayak IAS\n"
+    "/chandra - Chandra App\n"
+    "/mgconcept - Mgconcept App\n"
+    "/down - Download URL lists\n"
+    "/forward - Forward from one channel to another\n\n"
+    "Bot Owner: YASH"
+)
+
+
 # Plugins
 plugins = dict(root="plugins")
 
@@ -108,6 +132,91 @@ async def start_bot():
             await asyncio.sleep(wait_seconds)
 
 
+async def bot_api_start_fallback():
+    """Answer /start through Bot API when MTProto updates are not delivered."""
+    api_url = f"https://api.telegram.org/bot{Config.BOT_TOKEN}"
+    offset = None
+    timeout = aiohttp.ClientTimeout(total=40)
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        while True:
+            params = {
+                "timeout": 25,
+                "allowed_updates": json.dumps(["message"]),
+            }
+            if offset is not None:
+                params["offset"] = offset
+
+            try:
+                async with session.get(
+                    f"{api_url}/getUpdates",
+                    params=params,
+                ) as response:
+                    payload = await response.json(content_type=None)
+
+                if not payload.get("ok"):
+                    LOGGER.warning(
+                        "Bot API update polling failed: %s",
+                        payload.get("description", "unknown error"),
+                    )
+                    await asyncio.sleep(3)
+                    continue
+
+                start_messages = {}
+                for update in payload.get("result", []):
+                    update_id = update.get("update_id")
+                    if isinstance(update_id, int):
+                        offset = max(offset or 0, update_id + 1)
+
+                    message = update.get("message") or {}
+                    text = (message.get("text") or "").strip()
+                    if not text:
+                        continue
+                    command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
+                    chat_id = (message.get("chat") or {}).get("id")
+                    if command == "/start" and isinstance(chat_id, int):
+                        start_messages[chat_id] = message.get("message_id")
+
+                for chat_id, message_id in start_messages.items():
+                    reply_parameters = (
+                        {"message_id": message_id}
+                        if isinstance(message_id, int)
+                        else None
+                    )
+                    request_body = {
+                        "chat_id": chat_id,
+                        "text": START_MESSAGE,
+                    }
+                    if reply_parameters:
+                        request_body["reply_parameters"] = reply_parameters
+
+                    async with session.post(
+                        f"{api_url}/sendMessage",
+                        json=request_body,
+                    ) as response:
+                        result = await response.json(content_type=None)
+
+                    if result.get("ok"):
+                        LOGGER.info("Handled /start command via Bot API fallback")
+                    else:
+                        LOGGER.warning(
+                            "Bot API /start response failed: %s",
+                            result.get("description", "unknown error"),
+                        )
+            except asyncio.CancelledError:
+                raise
+            except (
+                aiohttp.ClientError,
+                asyncio.TimeoutError,
+                json.JSONDecodeError,
+            ) as error:
+                LOGGER.warning(
+                    "Bot API fallback connection failed: %s",
+                    type(error).__name__,
+                )
+                await asyncio.sleep(3)
+
+
 async def main():
     await start_bot()
 
@@ -117,9 +226,16 @@ async def main():
         f"<--- @{bot_info.username} Started (c) STARKBOT --->"
     )
 
-    await idle()
-
-    await bot.stop()
+    fallback_task = asyncio.create_task(
+        bot_api_start_fallback(),
+        name="bot-api-start-fallback",
+    )
+    try:
+        await idle()
+    finally:
+        fallback_task.cancel()
+        await asyncio.gather(fallback_task, return_exceptions=True)
+        await bot.stop()
 
 
 if __name__ == "__main__":
