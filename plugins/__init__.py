@@ -9,6 +9,7 @@ import sys
 
 @stark.on_message(filters.command(["start"]))
 async def Start_msg(bot: stark , m: Message):
+    LOGGER.info("Handling /start command")
     caption = (
         "**Hi i am All in One Extractor Bot**.\n"
         "Press **/pw** for **Physics Wallah**..\n\n"
@@ -29,18 +30,8 @@ async def Start_msg(bot: stark , m: Message):
         "Press **/forward** To **Forward from One channel to others**..\n\n"
         "**𝗕𝗼𝘁 𝗢𝘄𝗻𝗲𝗿 : YASH**"
     )
-    try:
-        await bot.send_photo(
-            m.chat.id,
-            photo="https://telegra.ph/file/cef3ef6ee69126c23bfe3.jpg",
-            caption=caption,
-        )
-    except Exception as error:
-        LOGGER.warning(
-            "Start photo failed (%s); sending text fallback",
-            type(error).__name__,
-        )
-        await m.reply_text(caption)
+    await m.reply_text(caption)
+    LOGGER.info("Handled /start command")
            
 
 
