@@ -78,8 +78,7 @@ bot = Client(
     api_hash=Config.API_HASH,
     sleep_threshold=20,
     plugins=plugins,
-    workers=50,
-    in_memory=True
+    workers=50
 )
 
 
