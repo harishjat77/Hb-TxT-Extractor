@@ -27,6 +27,7 @@ import logging
 import tgcrypto
 from config import Config
 from pyrogram import Client, idle
+from pyrogram.errors import FloodWait
 from pyromod import listen
 from logging.handlers import RotatingFileHandler
 
@@ -82,8 +83,24 @@ bot = Client(
 )
 
 
+async def start_bot():
+    while True:
+        try:
+            await bot.start()
+            return
+        except FloodWait as error:
+            wait_seconds = int(error.value) + 1
+            LOGGER.warning(
+                "Telegram rate limit during startup; retrying in %s seconds",
+                wait_seconds,
+            )
+            if bot.is_connected:
+                await bot.disconnect()
+            await asyncio.sleep(wait_seconds)
+
+
 async def main():
-    await bot.start()
+    await start_bot()
 
     bot_info = await bot.get_me()
 
