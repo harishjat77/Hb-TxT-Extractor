@@ -23,6 +23,7 @@
 
 import asyncio
 import logging
+import sys
 
 import tgcrypto
 from config import Config
@@ -33,6 +34,14 @@ from logging.handlers import RotatingFileHandler
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+# Plugins import shared values with ``from main import ...``. When this file is
+# started as a script, Python normally registers it only as ``__main__`` and
+# importing ``main`` would execute the whole module a second time, creating a
+# second Pyrogram Client. Point both module names at the same running module so
+# every plugin uses the one Client that is actually started below.
+sys.modules.setdefault("main", sys.modules[__name__])
 
 
 logging.basicConfig(
