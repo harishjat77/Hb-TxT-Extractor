@@ -65,8 +65,7 @@ plugins = dict(root="plugins")
 
 
 if __name__ == "__main__":
-
-    print("API_ID:", Config.API_ID)
+print("API_ID:", Config.API_ID)
 print("API_HASH length:", len(Config.API_HASH))
 print("BOT_TOKEN present:", bool(Config.BOT_TOKEN))
 
