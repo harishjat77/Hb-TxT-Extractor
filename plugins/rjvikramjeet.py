@@ -57,7 +57,7 @@ def decode(tn):
   plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
   url=plaintext.decode('utf-8')
   return url
-@bot.on_message(filters.command(["rgvikramjeet"]) & ~filters.edited)
+@bot.on_message(filters.command(["rgvikramjeet"]))
 async def account_login(bot: Client, m: Message):
     s = requests.Session()
     global cancel
@@ -184,4 +184,3 @@ async def account_login(bot: Client, m: Message):
       os.remove(f"{mm} - {course_title}.txt")
     except Exception as e:
         await m.reply_text(str(e))
-    

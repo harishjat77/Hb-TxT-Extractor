@@ -75,7 +75,7 @@ bot = Client(
   api_hash= "9fd790a9cb1f639c921d941621d2959d" 
 )
 
-@bot.on_message(filters.command(["down"]) & ~filters.edited)
+@bot.on_message(filters.command(["down"]))
 async def account_login(bot: Client, m: Message):
     #s = requests.Session()
     global cancel
